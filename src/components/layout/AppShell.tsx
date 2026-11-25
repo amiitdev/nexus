@@ -10,6 +10,7 @@ import {
   Monitor,
   Moon,
   Network,
+  PlugZap,
   RefreshCw,
   Settings2,
   Square,
@@ -31,6 +32,7 @@ const Organizer = lazy(() => import("../../pages/Organizer").then((m) => ({ defa
 const Processes = lazy(() => import("../../pages/Processes").then((m) => ({ default: m.Processes })));
 const NetworkPage = lazy(() => import("../../pages/NetworkPage").then((m) => ({ default: m.NetworkPage })));
 const SettingsPage = lazy(() => import("../../pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const SshPage = lazy(() => import("../../pages/SshPage").then((m) => ({ default: m.SshPage })));
 
 const NAV: { id: PageId; label: string; icon: typeof Cpu; description: string }[] = [
   { id: "dashboard", label: "Overview", icon: LayoutDashboard, description: "Live system status" },
@@ -40,6 +42,7 @@ const NAV: { id: PageId; label: string; icon: typeof Cpu; description: string }[
   { id: "desktop", label: "Desktop", icon: Monitor, description: "Desktop organizer" },
   { id: "processes", label: "Processes", icon: Cpu, description: "Running applications" },
   { id: "network", label: "Network", icon: Network, description: "Traffic & interfaces" },
+  { id: "ssh", label: "SSH devices", icon: PlugZap, description: "Connect & transfer files" },
 ];
 
 function Logo() {
@@ -231,6 +234,7 @@ const PAGES: Record<PageId, ComponentType> = {
   desktop: DesktopPage,
   processes: Processes,
   network: NetworkPage,
+  ssh: SshPage,
   settings: SettingsPage,
 };
 

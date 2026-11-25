@@ -5,6 +5,7 @@ pub mod monitor;
 pub mod organizer;
 pub mod processes;
 pub mod settings;
+pub mod ssh;
 pub mod util;
 
 use tauri::menu::{Menu, MenuItem};
@@ -16,6 +17,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(ssh::SshManager::default())
         .setup(|app| {
             // System tray: hide on close when the user opted in.
             let show = MenuItem::with_id(app, "show", "Show NEXUS", true, None::<&str>)?;
@@ -83,6 +85,27 @@ pub fn run() {
             commands::undo_operation,
             commands::restore_file,
             commands::get_app_version,
+            ssh::ssh_list_connections,
+            ssh::ssh_save_connection,
+            ssh::ssh_delete_connection,
+            ssh::ssh_detected_hosts,
+            ssh::ssh_suggest_key,
+            ssh::ssh_test_connection,
+            ssh::ssh_accept_host_key,
+            ssh::ssh_connect,
+            ssh::ssh_disconnect,
+            ssh::ssh_statuses,
+            ssh::ssh_list_dir,
+            ssh::ssh_create_dir,
+            ssh::ssh_delete_remote,
+            ssh::ssh_rename_remote,
+            ssh::ssh_read_file,
+            ssh::ssh_download,
+            ssh::ssh_upload,
+            ssh::ssh_local_home,
+            ssh::ssh_local_list,
+            ssh::ssh_local_create_dir,
+            ssh::ssh_local_delete,
         ])
         .run(tauri::generate_context!())
         .expect("failed to launch NEXUS");

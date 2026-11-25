@@ -6,7 +6,7 @@
 
 ### The premium Linux system control center
 
-**Live hardware monitoring · Real-time performance graphs · Safe one-click Downloads & Desktop organization**
+**Live hardware monitoring · Real-time performance graphs · Safe one-click organization · SSH device manager with two-way file transfer**
 
 [![platform](https://img.shields.io/badge/platform-Linux-amber?logo=linux&logoColor=white)](https://www.linux.org/)
 [![stack](https://img.shields.io/badge/built%20with-Tauri%202%20%2B%20Rust%20%2B%20React-orange?logo=tauri&logoColor=white)](https://tauri.app/)
@@ -26,6 +26,7 @@ NEXUS is a lightweight, cross-distribution desktop application that brings toget
 - **Where is my disk going?** — capacity, filesystem, read/write throughput, NVMe temperature.
 - **What is on the network?** — live up/down throughput, totals, active interface, IP and connected Wi‑Fi SSID with signal strength.
 - **Can I tidy my Downloads or Desktop safely?** — preview every move, confirm, then undo or restore whenever you like.
+- **Can I reach my other machines and phone?** — save SSH devices, verify host keys once, browse their folders and transfer files/folders both ways from a dual-pane file manager.
 
 > **No invented numbers.** If your hardware or driver does not expose a reading, NEXUS shows **“Not available”** instead of a guess.
 
@@ -37,13 +38,14 @@ NEXUS is a lightweight, cross-distribution desktop application that brings toget
 2. [Installation](#installation) — [AppImage](#1-appimage-universal), [DEB](#2-deb-ubuntu-linux-mint-debian-pop_os), [RPM](#3-rpm-fedora-rhel-opensuse), [from source](#4-build-from-source-any-distribution), [Flatpak](#5-flatpak)
 3. [First launch & quick start](#first-launch--quick-start)
 4. [The Downloads / Desktop organizer](#the-downloads--desktop-organizer)
-5. [Features in detail](#features-in-detail)
-6. [Configuration & data paths](#configuration--data-paths)
-7. [Architecture](#architecture)
-8. [Performance](#performance)
-9. [Troubleshooting](#troubleshooting)
-10. [Uninstall](#uninstall)
-11. [Contributing & license](#contributing--license)
+5. [SSH devices & two-way file transfer](#ssh-devices--two-way-file-transfer)
+6. [Features in detail](#features-in-detail)
+7. [Configuration & data paths](#configuration--data-paths)
+8. [Architecture](#architecture)
+9. [Performance](#performance)
+10. [Troubleshooting](#troubleshooting)
+11. [Uninstall](#uninstall)
+12. [Contributing & license](#contributing--license)
 
 ---
 
@@ -81,6 +83,13 @@ NEXUS is a lightweight, cross-distribution desktop application that brings toget
 <summary><b>Process manager</b> — sortable by CPU or memory, with details and guarded termination</summary>
 
 <img src="docs/screenshots/processes.png" alt="NEXUS process manager">
+
+</details>
+
+<details>
+<summary><b>SSH devices</b> — saved devices, detected hosts, dual-pane browser and two-way transfers</summary>
+
+<img src="docs/screenshots/ssh.png" alt="NEXUS SSH device manager with dual-pane file transfer">
 
 </details>
 
@@ -317,7 +326,8 @@ A native Flatpak build is **not shipped**. Tauri relies on WebKitGTK, which cann
    - Review the exact move list and category sizes.
    - Press **Organize N files** to confirm. Nothing is deleted or overwritten.
    - Use **Undo all** or click an individual filename in **Operation history** to restore it.
-5. **Settings** lets you switch theme/accent, polling interval, temperature unit, tray behavior, launch-at-login, default Downloads folder and organizer extension rules.
+5. Visit **SSH devices**. Hosts from `~/.ssh/config` appear automatically — press **Import** on one, or **Add device** for a new machine. Confirm the host fingerprint once, then browse and transfer files.
+6. **Settings** lets you switch theme/accent, polling interval, temperature unit, tray behavior, launch-at-login, default Downloads folder and organizer extension rules.
 
 **Closing the window hides it to the tray** by default (if your desktop has a system tray). Use the tray menu → **Quit NEXUS** to exit, or disable this in Settings.
 
@@ -359,6 +369,59 @@ Categories, subfolders and extension lists are fully editable in **Settings → 
 
 ---
 
+## SSH devices & two-way file transfer
+
+The **SSH devices** page turns NEXUS into a lightweight SFTP client for your other machines — a phone running Termux, a server, a Raspberry Pi, another laptop. It uses `libssh2` directly in Rust (compiled into the app — no system SSH client or extra runtime package needed): no `ssh`, `scp` or `rsync` subprocess, no cloud relay, and no root privileges.
+
+### Adding a device
+
+Three ways in, whichever is easiest:
+
+1. **Import from `~/.ssh/config`** — NEXUS parses `Host` blocks (`HostName`, `Port`, `User`, `IdentityFile`) and shows them as *Detected SSH hosts*. Press **Import**, then **Connect**. Your existing aliases (for example a `myphone` entry) become one-click devices. When a host has no explicit `IdentityFile`, NEXUS suggests `~/.ssh/id_ed25519` (or `id_rsa`/`id_ecdsa`) automatically.
+2. **Add device manually** — fill in a friendly name, host/IP, port (default `22`), username and one of:
+   - **Password** — stored locally in a `0600` file.
+   - **Private key** — choose a key file with **Browse**, add a passphrase if the key is encrypted.
+   - **SSH agent** — uses keys already loaded with `ssh-add`; no secret is stored.
+3. Edit any saved device later with the pencil button; delete removes it from NEXUS (it never touches the remote machine).
+
+### First connection and host-key safety
+
+On the first connection NEXUS shows the device's **SHA256 host-key fingerprint** and asks you to verify it on the device itself. Pressing **Trust & connect** stores that fingerprint and opens the session. From then on:
+
+- A matching fingerprint connects silently.
+- A **changed fingerprint blocks the connection** and shows a warning — NEXUS will not silently accept a different key (protects against man-in-the-middle attacks).
+- Remove the device and re-add it only after verifying physically.
+
+### Browsing and transferring
+
+Once connected, a **dual-pane browser** appears:
+
+| Pane | Contents |
+|---|---|
+| Left | This laptop's filesystem (via plain Rust `std::fs`) |
+| Right | The remote device over SFTP |
+
+- Click a folder to enter it; use **↑** for parent, **Home**, the path field (Enter to jump), and **Refresh**.
+- Tick checkboxes to select multiple files or folders. Double-click a text file (or use the eye icon) for an inline preview.
+- **Upload →** copies the selected local items into the current remote folder.
+- **← Download** copies the selected remote items into the current local folder.
+- Both directions are **recursive**: whole folders and their contents are transferred.
+- **New folder** and **Delete** (with confirmation) work in either pane. Remote deletes are single-item / empty-folder only — no accidental recursive wipe.
+- A **Recent transfers** list shows progress bars, byte counts and any per-item errors. Progress is streamed from Rust via Tauri events.
+
+Transfers use atomic chunked reads/writes with a 128 KB buffer. Existing remote/local files are overwritten by an explicit transfer — the same surgery is *not* applied by any automatic organizer rule.
+
+### Data locations
+
+| Purpose | Path |
+|---|---|
+| Saved devices, passwords, key passphrases, trusted fingerprints | `~/.local/share/nexus/ssh-connections.json` (`0600`) |
+| Live sessions | In memory only — closed when NEXUS exits or you press **Disconnect** |
+
+> Tip: Termux on Android normally exposes files under `/storage/emulated/0` and `/data/data/com.termux/files/home`. Type that path into the remote path field to jump straight there.
+
+---
+
 ## Features in detail
 
 ### Monitoring
@@ -374,6 +437,7 @@ Categories, subfolders and extension lists are fully editable in **Settings → 
 | Performance | Eight live metric tiles, seven selectable charts, 1m/5m/15m/1h ranges, compact/detailed views |
 | Processes | Name, PID, user, status, CPU, memory, executable and command line; search, clickable sortable headers, details drawer, guarded SIGTERM/SIGKILL |
 | Network | Live up/down speed, cumulative totals, default interface, IPv4, link state, connected Wi‑Fi SSID and signal |
+| SSH devices | Saved connections (password / key / agent), host-key TOFU verification, `~/.ssh/config` import, dual-pane SFTP browser, recursive two-way transfer, progress events |
 
 ### Design
 
@@ -392,6 +456,7 @@ NEXUS follows the XDG Base Directory specification:
 |---|---|
 | Settings | `~/.config/nexus/settings.json` |
 | Organizer journal | `~/.local/share/nexus/organize-history.json` |
+| SSH devices & trusted host keys | `~/.local/share/nexus/ssh-connections.json` (`0600`) |
 | Launch at login | `~/.config/autostart/nexus.desktop` |
 | Logs | Standard output; run with `RUST_LOG=debug nexus` for verbose diagnostics |
 
@@ -419,7 +484,7 @@ Settings are plain JSON — safe to back up or edit by hand:
 src/                        React 18 + TypeScript + Tailwind CSS + Framer Motion + Recharts
 ├── components/layout/      App shell, custom title bar, sidebar
 ├── components/ui/          Design-system primitives, rings, meters, modals, charts
-├── pages/                  Dashboard, Hardware, Performance, Organizer, Desktop, Processes, Network, Settings
+├── pages/                  Dashboard, Hardware, Performance, Organizer, Desktop, Processes, Network, SSH devices, Settings
 ├── store/                  Zustand settings + in-memory telemetry ring buffers
 └── lib/                    Tauri IPC wrappers, formatting, theming
 
@@ -427,6 +492,7 @@ src-tauri/src/              Rust backend (Tauri 2)
 ├── monitor/                /proc, /sys, hwmon, DRM, DMI and nvidia-smi collectors
 ├── organizer.rs            Preview, atomic moves, journal, undo, restore
 ├── processes.rs            Process table and critical-process policy
+├── ssh.rs                  SSH sessions, host-key trust, SFTP browser + transfers
 ├── settings.rs             XDG config + autostart
 ├── commands.rs             Thin #[tauri::command] layer
 └── models.rs               serde contracts shared with TypeScript
@@ -476,6 +542,11 @@ Every displayed value comes from real Linux interfaces:
 | Not in the application menu | Log out/in, or create the `.desktop` file shown in the AppImage section. |
 | Tray icon missing | Install `libayatana-appindicator3-1`; disable “Minimize to tray” in Settings if your desktop has no tray. |
 | Organizer skipped a file | Hidden, partial, symlinked or already-organized files are skipped by design — the reason is shown in the preview. |
+| SSH connection times out | Check the device is on the same network, the IP and port are correct, and port 22/8022 is open. For Termux, `sshd` must be running (`sshd` in Termux). |
+| SSH says “Authentication failed” | Verify username/password, or for key auth check the key path and passphrase. With `agent`, confirm `ssh-add -l` lists the key. |
+| SSH fingerprint warning appears | The remote host key changed. Verify on the device; never blindly re-trust. |
+| No hosts detected from SSH config | NEXUS reads `~/.ssh/config`. Wildcard `Host *` blocks are ignored; add an explicit `Host` alias. |
+| Transfer stops with a permission error | The SSH user lacks write permission in that remote folder; pick a writable folder or use `~/`. |
 | Verbose diagnostics | `RUST_LOG=debug nexus` |
 
 ---
@@ -497,6 +568,7 @@ rm -f ~/Downloads/NEXUS.AppImage ~/.local/share/applications/nexus.desktop
 
 # Optional: remove user configuration and history
 rm -rf ~/.config/nexus ~/.local/share/nexus ~/.config/autostart/nexus.desktop
+# This also removes saved SSH devices and trusted fingerprints.
 ```
 
 ---

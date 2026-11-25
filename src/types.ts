@@ -241,6 +241,68 @@ export interface AppSettings {
 
 export type AccentKey = "violet" | "cyan" | "emerald" | "amber" | "rose" | "blue";
 
+// SSH device manager
+export interface SshConnection {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  authMethod: "password" | "key" | "agent";
+  password: string | null;
+  privateKeyPath: string | null;
+  passphrase: string | null;
+  remoteHome: string | null;
+  fingerprint: string | null;
+  createdAt: number;
+}
+
+export interface SshConnectResult {
+  connected: boolean;
+  needsTrust: boolean;
+  fingerprint: string | null;
+  error: string | null;
+}
+
+export interface SshDeviceStatus {
+  id: string;
+  connected: boolean;
+  host: string;
+  username: string;
+}
+
+export interface SshFileEntry {
+  name: string;
+  path: string;
+  kind: "file" | "dir" | "link" | "other";
+  size: number;
+  modified: number;
+  permissions: string | null;
+}
+
+export interface SshListing {
+  path: string;
+  entries: SshFileEntry[];
+}
+
+export interface SshDetectedHost {
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  identityFile: string | null;
+}
+
+export interface SshTransferProgress {
+  id: string;
+  direction: "download" | "upload";
+  label: string;
+  transferred: number;
+  total: number;
+  done: boolean;
+  error: string | null;
+}
+
 export type PageId =
   | "dashboard"
   | "hardware"
@@ -249,4 +311,5 @@ export type PageId =
   | "desktop"
   | "processes"
   | "network"
+  | "ssh"
   | "settings";

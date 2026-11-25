@@ -324,3 +324,104 @@ impl Default for AppSettings {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// SSH device manager
+// ---------------------------------------------------------------------------
+
+/// A saved SSH device. Secrets live in a 0600 file under the XDG data dir.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct SshConnection {
+    pub id: String,
+    pub name: String,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    /// "password", "key" or "agent"
+    pub auth_method: String,
+    pub password: Option<String>,
+    pub private_key_path: Option<String>,
+    pub passphrase: Option<String>,
+    pub remote_home: Option<String>,
+    /// SHA256 host-key fingerprint accepted by the user on first connect.
+    pub fingerprint: Option<String>,
+    pub created_at: u64,
+}
+
+impl Default for SshConnection {
+    fn default() -> Self {
+        Self {
+            id: format!("ssh-{}", crate::util::now_millis()),
+            name: String::new(),
+            host: String::new(),
+            port: 22,
+            username: String::new(),
+            auth_method: "password".into(),
+            password: None,
+            private_key_path: None,
+            passphrase: None,
+            remote_home: None,
+            fingerprint: None,
+            created_at: crate::util::now_millis(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshConnectResult {
+    pub connected: bool,
+    pub needs_trust: bool,
+    pub fingerprint: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshDeviceStatus {
+    pub id: String,
+    pub connected: bool,
+    pub host: String,
+    pub username: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshFileEntry {
+    pub name: String,
+    pub path: String,
+    pub kind: String,
+    pub size: u64,
+    pub modified: i64,
+    pub permissions: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshListing {
+    pub path: String,
+    pub entries: Vec<SshFileEntry>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshDetectedHost {
+    pub name: String,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub identity_file: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshTransferProgress {
+    pub id: String,
+    pub direction: String,
+    pub label: String,
+    pub transferred: u64,
+    pub total: u64,
+    pub done: bool,
+    pub error: Option<String>,
+}
